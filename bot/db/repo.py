@@ -96,28 +96,53 @@ async def create_broadcast_message(session: AsyncSession, sender_id: int) -> Bro
 
 
 async def add_message_copy(
-    session: AsyncSession, broadcast_id: int, recipient_chat_id: int, telegram_message_id: int
+    session: AsyncSession,
+    broadcast_id: int,
+    recipient_chat_id: int,
+    telegram_message_id: int,
+    is_content: bool = True,
 ) -> None:
     session.add(
         MessageCopy(
             broadcast_id=broadcast_id,
             recipient_chat_id=recipient_chat_id,
             telegram_message_id=telegram_message_id,
+            is_content=is_content,
         )
     )
     await session.flush()
 
 
-async def resolve_sender(session: AsyncSession, chat_id: int, telegram_message_id: int) -> User | None:
-    copy = await session.scalar(
-        select(MessageCopy).where(
+async def get_broadcast_id_for_message(session: AsyncSession, chat_id: int, telegram_message_id: int) -> int | None:
+    return await session.scalar(
+        select(MessageCopy.broadcast_id).where(
             MessageCopy.recipient_chat_id == chat_id,
             MessageCopy.telegram_message_id == telegram_message_id,
         )
     )
-    if copy is None:
+
+
+async def get_content_copy_message_id(
+    session: AsyncSession, broadcast_id: int, recipient_chat_id: int
+) -> int | None:
+    """The message id of the *content* copy a given recipient received for a
+    broadcast -- used to translate "reply to X" into that recipient's own
+    equivalent message when relaying a reply.
+    """
+    return await session.scalar(
+        select(MessageCopy.telegram_message_id).where(
+            MessageCopy.broadcast_id == broadcast_id,
+            MessageCopy.recipient_chat_id == recipient_chat_id,
+            MessageCopy.is_content.is_(True),
+        )
+    )
+
+
+async def resolve_sender(session: AsyncSession, chat_id: int, telegram_message_id: int) -> User | None:
+    broadcast_id = await get_broadcast_id_for_message(session, chat_id, telegram_message_id)
+    if broadcast_id is None:
         return None
-    broadcast = await session.get(BroadcastMessage, copy.broadcast_id)
+    broadcast = await session.get(BroadcastMessage, broadcast_id)
     if broadcast is None:
         return None
     return await session.get(User, broadcast.sender_id)

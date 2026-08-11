@@ -51,6 +51,10 @@ class MessageCopy(Base):
     broadcast_id: Mapped[int] = mapped_column(Integer, ForeignKey("broadcast_messages.id"))
     recipient_chat_id: Mapped[int] = mapped_column(BigInteger)
     telegram_message_id: Mapped[int] = mapped_column(BigInteger)
+    # False only for the small "🕶 label" header sent ahead of content types that
+    # have no caption slot (stickers, video notes, ...). Used to pick which of a
+    # recipient's messages a reply-to should point at.
+    is_content: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class Room(Base):
