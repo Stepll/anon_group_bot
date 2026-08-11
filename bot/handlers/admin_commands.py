@@ -20,7 +20,7 @@ HELP_TEXT = (
     "/ban — у відповідь на повідомлення забанити автора\n"
     "/unban — список забанених для розбану\n"
     "/pseudonym on|off — увімкнути/вимкнути псевдо-номери учасників\n"
-    "/setlimit <секунди> — анти-флуд ліміт\n"
+    "/setlimit (секунди) — анти-флуд ліміт\n"
     "/stats — статистика чату\n"
     "/room — у відповідь на повідомлення почати приватну кімнату з автором\n"
     "/leaveroom — завершити активну приватну кімнату"
@@ -104,7 +104,7 @@ async def cmd_setlimit(message: Message, command: CommandObject, session: AsyncS
         if value < 0:
             raise ValueError
     except ValueError:
-        await message.answer("Використання: /setlimit <секунди>, напр. /setlimit 1.5")
+        await message.answer("Використання: /setlimit (секунди), напр. /setlimit 1.5")
         return
 
     await repo.set_rate_limit(session, value)
